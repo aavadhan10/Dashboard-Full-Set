@@ -11,8 +11,11 @@ def load_and_process_data():
         # Load the CSV file directly
         df = pd.read_csv('Full.csv', parse_dates=['Activity date', 'Matter pending date', 'Matter close date'])
         
-        # Add month name for better readability in filters
-        df['Activity month_name'] = df['Activity date'].dt.strftime('%B')
+        # Add derived date columns
+        df['year'] = df['Activity date'].dt.year
+        df['month'] = df['Activity date'].dt.month
+        df['month_name'] = df['Activity date'].dt.strftime('%B')
+        df['quarter'] = df['Activity date'].dt.quarter
         
         # Convert Matter description to string and handle missing values
         df['Matter description'] = df['Matter description'].fillna('').astype(str)
@@ -37,23 +40,23 @@ def create_sidebar_filters(df):
     with filter_tabs[0]:  # Time Filters
         st.subheader("Time Period")
         
-        # Changed from Activity year to just year
+        # Use derived year column
         selected_year = st.selectbox(
             "Year",
             options=sorted(df['year'].unique()),
             index=len(df['year'].unique()) - 1
         )
         
-        # Changed from Activity quarter to just quarter
+        # Use derived quarter column
         selected_quarter = st.selectbox(
             "Quarter",
             options=['All'] + sorted(df['quarter'].unique().tolist())
         )
         
-        # Changed from Activity month to just month
+        # Use month names for better readability
         selected_months = st.multiselect(
             "Months",
-            options=sorted(df['month'].unique())
+            options=sorted(df['month_name'].unique())
         )
         
         date_range = st.date_input(
@@ -63,88 +66,6 @@ def create_sidebar_filters(df):
             max_value=df['Activity date'].max()
         )
 
-    with filter_tabs[1]:  # Attorney Filters
-        st.subheader("Attorney Information")
-        selected_attorneys = st.multiselect(
-            "Attorneys",
-            options=sorted(df['User full name (first, last)'].unique())
-        )
-        
-        selected_originating = st.multiselect(
-            "Originating Attorneys",
-            options=sorted(df['Originating attorney'].dropna().unique())
-        )
-        
-        min_hours = st.slider(
-            "Minimum Billable Hours",
-            min_value=0.0,
-            max_value=float(df['Billable hours'].max()),
-            value=0.0
-        )
-
-    with filter_tabs[2]:  # Practice Filters
-        st.subheader("Practice Areas")
-        selected_practice_areas = st.multiselect(
-            "Practice Areas",
-            options=sorted(df['Practice area'].unique())
-        )
-        
-        selected_locations = st.multiselect(
-            "Locations",
-            options=sorted(df['Matter location'].unique())
-        )
-
-    with filter_tabs[3]:  # Matter Filters
-        st.subheader("Matter Details")
-        selected_matter_status = st.multiselect(
-            "Matter Status",
-            options=sorted(df['Matter status'].dropna().unique())
-        )
-        
-        if 'Matter stage' in df.columns:
-            selected_matter_stage = st.multiselect(
-                "Matter Stage",
-                options=sorted(df['Matter stage'].dropna().unique())
-            )
-        
-        selected_billable_matter = st.multiselect(
-            "Billable Matter",
-            options=sorted(df['Billable matter'].dropna().unique())
-        )
-
-    with filter_tabs[4]:  # Financial Filters
-        st.subheader("Financial Metrics")
-        min_amount = st.number_input(
-            "Minimum Billable Amount",
-            min_value=0.0,
-            max_value=float(df['Billable hours amount'].max()),
-            value=0.0
-        )
-        
-        rate_range = st.slider(
-            "Hourly Rate Range",
-            min_value=float(df['Billable hours amount'].min()),
-            max_value=float(df['Billable hours amount'].max()),
-            value=(float(df['Billable hours amount'].min()), float(df['Billable hours amount'].max()))
-        )
-
-    with filter_tabs[5]:  # Client Filters
-        st.subheader("Client Information")
-        selected_clients = st.multiselect(
-            "Select Clients",
-            options=sorted(df['Matter description'].unique())
-        )
-        
-        min_client_hours = st.slider(
-            "Minimum Client Hours",
-            min_value=0.0,
-            max_value=float(df.groupby('Matter description')['Billable hours'].sum().max()),
-            value=0.0
-        )
-
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("**Last Data Refresh:** December 16, 2024")
-    st.sidebar.markdown("**Data Range:** December 2023 - December 2024")
 
     return {
         'year': selected_year,
@@ -169,20 +90,20 @@ def filter_data(df, filters):
     """Apply all filters to the dataframe."""
     filtered_df = df.copy()
     
-    # Time filters
+    # Time filters using derived columns
     if filters['year']:
         filtered_df = filtered_df[filtered_df['year'] == filters['year']]
     if filters['quarter']:
         filtered_df = filtered_df[filtered_df['quarter'] == filters['quarter']]
     if filters['months']:
-        filtered_df = filtered_df[filtered_df['month'].isin(filters['months'])]
+        filtered_df = filtered_df[filtered_df['month_name'].isin(filters['months'])]
     if len(filters['date_range']) == 2:
         filtered_df = filtered_df[
             (filtered_df['Activity date'].dt.date >= filters['date_range'][0]) &
             (filtered_df['Activity date'].dt.date <= filters['date_range'][1])
         ]
     
-    # Rest of the filters remain the same
+    # Attorney filters
     if filters['attorneys']:
         filtered_df = filtered_df[filtered_df['User full name (first, last)'].isin(filters['attorneys'])]
     if filters['originating_attorneys']:
@@ -224,7 +145,6 @@ def filter_data(df, filters):
         filtered_df = filtered_df[filtered_df['Matter description'].isin(valid_clients)]
     
     return filtered_df
-
 def display_key_metrics(df):
     """Display key metrics in the top row."""
     col1, col2, col3, col4 = st.columns(4)
