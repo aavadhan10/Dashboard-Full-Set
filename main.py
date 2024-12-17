@@ -37,20 +37,23 @@ def create_sidebar_filters(df):
     with filter_tabs[0]:  # Time Filters
         st.subheader("Time Period")
         
+        # Changed from Activity year to just year
         selected_year = st.selectbox(
             "Year",
-            options=sorted(df['Activity year'].unique()),
-            index=len(df['Activity year'].unique()) - 1
+            options=sorted(df['year'].unique()),
+            index=len(df['year'].unique()) - 1
         )
         
+        # Changed from Activity quarter to just quarter
         selected_quarter = st.selectbox(
             "Quarter",
-            options=['All'] + sorted(df['Activity quarter'].unique().tolist())
+            options=['All'] + sorted(df['quarter'].unique().tolist())
         )
         
+        # Changed from Activity month to just month
         selected_months = st.multiselect(
             "Months",
-            options=sorted(df['Activity month_name'].unique())
+            options=sorted(df['month'].unique())
         )
         
         date_range = st.date_input(
@@ -168,18 +171,18 @@ def filter_data(df, filters):
     
     # Time filters
     if filters['year']:
-        filtered_df = filtered_df[filtered_df['Activity year'] == filters['year']]
+        filtered_df = filtered_df[filtered_df['year'] == filters['year']]
     if filters['quarter']:
-        filtered_df = filtered_df[filtered_df['Activity quarter'] == filters['quarter']]
+        filtered_df = filtered_df[filtered_df['quarter'] == filters['quarter']]
     if filters['months']:
-        filtered_df = filtered_df[filtered_df['Activity month_name'].isin(filters['months'])]
+        filtered_df = filtered_df[filtered_df['month'].isin(filters['months'])]
     if len(filters['date_range']) == 2:
         filtered_df = filtered_df[
             (filtered_df['Activity date'].dt.date >= filters['date_range'][0]) &
             (filtered_df['Activity date'].dt.date <= filters['date_range'][1])
         ]
     
-    # Attorney filters
+    # Rest of the filters remain the same
     if filters['attorneys']:
         filtered_df = filtered_df[filtered_df['User full name (first, last)'].isin(filters['attorneys'])]
     if filters['originating_attorneys']:
