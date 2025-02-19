@@ -9,7 +9,7 @@ def load_and_process_data():
     """Load and process the full year CSV file."""
     try:
         # Load the CSV file directly
-        df = pd.read_csv('Full.csv', parse_dates=['Activity date', 'Matter pending date', 'Matter close date'])
+        df = pd.read_csv('Test_Full_Year.csv', parse_dates=['Activity date', 'Matter pending date', 'Matter close date'])
         
         # Add derived date columns
         df['year'] = df['Activity date'].dt.year
